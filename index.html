@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BatchTrack — Om International</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f0e;
+    --surface: #161a18;
+    --surface2: #1e2421;
+    --border: #2a3230;
+    --accent: #b8f5a0;
+    --accent2: #5cde8f;
+    --text: #e8ede9;
+    --muted: #6b7a70;
+    --danger: #ff6b6b;
+    --warning: #ffd166;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 48px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo-block h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 28px;
+    letter-spacing: -0.5px;
+    color: var(--accent);
+  }
+
+  .logo-block p {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .config-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .config-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .config-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 32px;
+    display: none;
+    animation: slideDown 0.2s ease;
+  }
+  .config-panel.open { display: block; }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .config-panel h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 16px;
+  }
+
+  .config-row { display: flex; gap: 12px; align-items: flex-end; }
+  .config-panel label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .config-panel input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  .config-panel input:focus { border-color: var(--accent); }
+
+  .save-config-btn {
+    background: var(--accent);
+    color: #0d0f0e;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+  }
+  .save-config-btn:hover { opacity: 0.85; }
+
+  .generator-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    margin-bottom: 32px;
+  }
+
+  .batch-display {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+
+  .batch-number {
+    font-family: 'DM Mono', monospace;
+    font-size: 40px;
+    font-weight: 500;
+    letter-spacing: 0.25em;
+    color: var(--accent);
+  }
+  .batch-number span.alpha { color: var(--accent2); }
+
+  .regen-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .regen-btn:hover { border-color: var(--accent2); color: var(--accent2); transform: rotate(90deg); }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field.full { grid-column: 1 / -1; }
+
+  .field label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 500;
+  }
+
+  .field input, .field textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field input:focus, .field textarea:focus { border-color: var(--accent); }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type="number"] { -moz-appearance: textfield; }
+  .field textarea { resize: vertical; min-height: 72px; }
+  .field input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
+
+  .submit-row { margin-top: 24px; }
+
+  .submit-btn {
+    background: var(--accent);
+    color: #0d0f0e;
+    border: none;
+    padding: 13px 32px;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    width: 100%;
+  }
+  .submit-btn:hover { opacity: 0.9; }
+  .submit-btn:active { transform: scale(0.98); }
+  .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .status-msg { font-size: 13px; padding: 10px 14px; border-radius: 8px; display: none; margin-top: 12px; }
+  .status-msg.success { background: rgba(184,245,160,0.1); color: var(--accent); border: 1px solid rgba(184,245,160,0.2); display: block; }
+  .status-msg.error { background: rgba(255,107,107,0.1); color: var(--danger); border: 1px solid rgba(255,107,107,0.2); display: block; }
+  .status-msg.loading { background: rgba(255,209,102,0.1); color: var(--warning); border: 1px solid rgba(255,209,102,0.2); display: block; }
+
+  .records-section { margin-top: 8px; }
+
+  .records-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .records-header h2 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .count-badge {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 12px;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .records-toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+  .search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 10px;
+    color: var(--muted);
+    font-size: 13px;
+    pointer-events: none;
+  }
+
+  .search-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 14px 8px 30px;
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 190px;
+    letter-spacing: 0.05em;
+  }
+  .search-box::placeholder { color: var(--muted); font-family: 'DM Sans', sans-serif; letter-spacing: 0; font-size: 12px; }
+  .search-box:focus { border-color: var(--accent); }
+
+  .load-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .load-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+  thead th {
+    background: var(--surface);
+    padding: 12px 16px;
+    text-align: left;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 400;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface); }
+  tbody td { padding: 12px 16px; color: var(--text); white-space: nowrap; }
+  td.batch-cell { font-family: 'DM Mono', monospace; font-weight: 500; color: var(--accent); letter-spacing: 0.1em; }
+
+  .view-more-row {
+    text-align: center;
+    padding: 14px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 0 0 14px 14px;
+  }
+
+  .view-more-btn {
+    background: none;
+    border: none;
+    color: var(--accent2);
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    transition: opacity 0.2s;
+  }
+  .view-more-btn:hover { opacity: 0.7; }
+
+  .empty-state { text-align: center; padding: 48px; color: var(--muted); font-size: 14px; }
+  .no-results-state {
+    text-align: center;
+    padding: 32px;
+    color: var(--muted);
+    font-size: 13px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    font-family: 'DM Mono', monospace;
+  }
+
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    animation: fadeIn 0.15s ease;
+  }
+  .modal-overlay.hidden { display: none; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 520px;
+    animation: scaleIn 0.15s ease;
+    overflow: hidden;
+  }
+  @keyframes scaleIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+  .modal-header { padding: 24px 28px 20px; border-bottom: 1px solid var(--border); }
+  .modal-header h3 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 17px; margin-bottom: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; }
+  .modal-batch { font-family: 'DM Mono', monospace; font-size: 28px; font-weight: 500; letter-spacing: 0.2em; color: var(--accent); }
+  .modal-batch span.alpha { color: var(--accent2); }
+  .modal-body { padding: 8px 28px 20px; }
+  .modal-grid { display: grid; grid-template-columns: 1fr 1fr; }
+  .modal-row { padding: 12px 16px 12px 0; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
+  .modal-row:nth-child(even) { padding: 12px 0 12px 16px; border-left: 1px solid var(--border); }
+  .modal-row.full { grid-column: 1 / -1; padding: 12px 0; border-left: none; }
+  .modal-row.no-border { border-bottom: none; }
+  .modal-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 500; }
+  .modal-value { font-size: 14px; color: var(--text); word-break: break-word; }
+  .modal-value.empty { color: var(--muted); font-style: italic; font-size: 13px; }
+  .modal-footer { padding: 20px 28px; border-top: 1px solid var(--border); display: flex; gap: 12px; }
+  /* View record modal */
+  .view-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 24px; animation: fadeIn 0.15s ease; }
+  .view-modal-overlay.hidden { display: none; }
+  .view-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; width: 100%; max-width: 520px; animation: scaleIn 0.15s ease; overflow: hidden; }
+  .view-modal-header { padding: 24px 28px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .view-modal-header h3 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .view-modal-batch { font-family: 'DM Mono', monospace; font-size: 28px; font-weight: 500; letter-spacing: 0.2em; color: var(--accent); }
+  .view-modal-batch span.alpha { color: var(--accent2); }
+  .close-btn { background: none; border: 1px solid var(--border); color: var(--muted); width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; margin-top: 4px; }
+  .close-btn:hover { border-color: var(--danger); color: var(--danger); }
+  .view-modal-body { padding: 8px 28px 24px; }
+  tbody tr { cursor: pointer; }
+  .btn-edit { flex: 1; background: none; border: 1px solid var(--border); color: var(--text); padding: 12px; border-radius: 10px; font-family: 'Syne', sans-serif; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+  .btn-edit:hover { border-color: var(--muted); }
+  .btn-confirm { flex: 2; background: var(--accent); border: none; color: #0d0f0e; padding: 12px; border-radius: 10px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer; transition: opacity 0.2s; }
+  .btn-confirm:hover { opacity: 0.88; }
+  .btn-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+  .dup-warning { background: rgba(255,107,107,0.1); border: 1px solid rgba(255,107,107,0.3); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--danger); margin: 16px 28px 0; display: none; }
+  .dup-warning.show { display: block; }
+  /* Customer dropdown */
+  .customer-wrap { position: relative; }
+  .customer-select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 36px 10px 14px;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    appearance: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .customer-select:focus { border-color: var(--accent); }
+  .customer-select option { background: var(--surface2); color: var(--text); }
+  .select-arrow { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--muted); font-size: 12px; }
+  .add-customer-btn {
+    margin-top: 6px;
+    background: none;
+    border: none;
+    color: var(--accent2);
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: opacity 0.2s;
+  }
+  .add-customer-btn:hover { opacity: 0.7; }
+  /* Add customer inline form */
+  .add-customer-form {
+    margin-top: 8px;
+    display: none;
+    gap: 8px;
+    align-items: center;
+  }
+  .add-customer-form.open { display: flex; }
+  .add-customer-form input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--accent2);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    outline: none;
+  }
+  .add-customer-form button {
+    background: var(--accent2);
+    border: none;
+    color: #0d0f0e;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+  }
+  .add-customer-form button:hover { opacity: 0.85; }
+  .add-customer-form .cancel-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 8px 12px;
+  }
+  .add-customer-form .cancel-btn:hover { opacity: 0.7; }
+  /* Print label styles */
+  .print-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .print-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  #labelPrintArea { display: none; }
+
+  .label-sheet {
+    width: 210mm;
+    box-sizing: border-box;
+    padding: 0.2mm 0.25mm 0.70mm 0.25mm;
+  }
+
+  .label-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 5mm;
+    row-gap: 5mm;
+  }
+
+  .label-item {
+    border: 0.3mm solid #000;
+    font-family: Arial, sans-serif;
+    font-size: 7.5pt;
+    color: #000;
+    background: #fff;
+    page-break-inside: avoid;
+    box-sizing: border-box;
+  }
+
+  .label-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 2mm 2mm 1.5mm 2mm;
+    border-bottom: 0.3mm solid #000;
+    gap: 2mm;
+  }
+
+  .label-address {
+    font-size: 6.8pt;
+    line-height: 1.4;
+    font-weight: normal;
+    flex: 1;
+  }
+
+  .label-address strong {
+    font-size: 7pt;
+    display: block;
+  }
+
+  /* veg icon uses inline SVG — no CSS class needed */
+
+  .label-row {
+    display: flex;
+    border-bottom: 0.3mm solid #000;
+    min-height: 5mm;
+  }
+
+  .label-row:last-of-type {
+    border-bottom: none;
+  }
+
+  .label-key {
+    padding: 1.2mm 2mm;
+    width: 40%;
+    font-weight: bold;
+    font-size: 7pt;
+    border-right: 0.3mm solid #000;
+    display: flex;
+    align-items: center;
+    line-height: 1.3;
+  }
+
+  .label-val {
+    padding: 1.2mm 2mm;
+    flex: 1;
+    font-size: 7pt;
+    display: flex;
+    align-items: center;
+    font-weight: normal;
+    line-height: 1.3;
+  }
+
+  .label-footer-row {
+    border-top: 0.3mm solid #000;
+    border-bottom: 0.3mm solid #000;
+    text-align: center;
+    padding: 1mm 2mm;
+    font-size: 6.5pt;
+    font-style: italic;
+  }
+
+  .label-nrs {
+    text-align: center;
+    padding: 1mm 2mm;
+    font-size: 7pt;
+    font-weight: bold;
+    letter-spacing: 0.03em;
+  }
+
+  @media (max-width: 600px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .batch-number { font-size: 30px; }
+    header { flex-direction: column; align-items: flex-start; gap: 16px; }
+    .records-toolbar { width: 100%; }
+    .search-box { flex: 1; width: auto; }
+    .modal-grid { grid-template-columns: 1fr; }
+    .modal-row:nth-child(even) { padding: 12px 0; border-left: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo-block">
+      <h1>BatchTrack</h1>
+      <p>Om International — Batch Management</p>
+    </div>
+    <button class="config-btn" onclick="toggleConfig()">⚙ Google Sheets Config</button>
+  </header>
+
+  <div class="config-panel" id="configPanel">
+    <h3>Google Sheets Setup</h3>
+    <div class="config-row">
+      <div style="flex:1">
+        <label>Apps Script Web App URL</label>
+        <input type="text" id="scriptUrl" placeholder="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec" />
+      </div>
+      <button class="save-config-btn" onclick="saveConfig()">Save</button>
+    </div>
+    <p style="font-size:12px; color:var(--muted); margin-top:12px; line-height:1.6;">
+      Deploy a Google Apps Script as a Web App and paste the URL above.<br>
+      <a href="#" onclick="showScriptHelp(event)" style="color:var(--accent2); text-decoration:none;">View Apps Script code ↓</a>
+    </p>
+    <div id="scriptHelp" style="display:none; margin-top:16px; background:var(--surface2); border-radius:10px; padding:16px; font-family:'DM Mono',monospace; font-size:11px; color:var(--muted); line-height:1.8; white-space:pre-wrap;"></div>
+  </div>
+
+  <div class="generator-card">
+    <div class="batch-display">
+      <div class="batch-number" id="batchDisplay">——————</div>
+      <button class="regen-btn" title="Regenerate" onclick="generateBatch()">↺</button>
+    </div>
+
+    <div class="form-grid">
+      <div class="field">
+        <label>Customer Name</label>
+        <div class="customer-wrap">
+          <select id="customer" class="customer-select">
+            <option value="">— Select customer —</option>
+          </select>
+          <span class="select-arrow">▾</span>
+        </div>
+        <button class="add-customer-btn" onclick="toggleAddCustomer(event)">＋ Add new customer</button>
+        <div class="add-customer-form" id="addCustomerForm">
+          <input type="text" id="newCustomerName" placeholder="Customer name…" onkeydown="if(event.key==='Enter')saveNewCustomer()" />
+          <button onclick="saveNewCustomer()">Add</button>
+          <button class="cancel-btn" onclick="toggleAddCustomer(event)">✕</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Invoice Number</label>
+        <input type="text" id="invoice" placeholder="e.g. INV-2026-041" />
+      </div>
+      <div class="field">
+        <label>Invoice Date</label>
+        <input type="date" id="invoiceDate" />
+      </div>
+      <div class="field">
+        <label>Product / SKU</label>
+        <input type="text" id="product" placeholder="e.g. Turmeric 100g" />
+      </div>
+      <div class="field">
+        <label>Quantity</label>
+        <input type="number" id="quantity" placeholder="e.g. 500" min="1" oninput="calcNetWeight()" />
+      </div>
+      <div class="field">
+        <label>Number of Bags</label>
+        <input type="number" id="bags" placeholder="e.g. 50" min="1" oninput="calcNetWeight()" />
+      </div>
+      <div class="field">
+        <label>Net Weight (per bag)</label>
+        <div style="display:flex;gap:0;align-items:stretch;">
+          <input type="number" id="netWeight" placeholder="e.g. 30" min="0" step="0.1" style="flex:1;border-radius:10px 0 0 10px;" />
+          <span style="background:var(--surface2);border:1px solid var(--border);border-left:none;color:var(--muted);padding:10px 14px;border-radius:0 10px 10px 0;font-family:'DM Sans',sans-serif;font-size:14px;display:flex;align-items:center;">Kgs</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Packing Date</label>
+        <input type="date" id="packingDate" />
+      </div>
+      <div class="field">
+        <label>Expiry Date</label>
+        <input type="date" id="expiryDate" />
+      </div>
+      <div class="field full">
+        <label>Notes</label>
+        <textarea id="notes" placeholder="Any additional notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="submit-row">
+      <button class="submit-btn" id="submitBtn" onclick="submitBatch()">Save Batch Record</button>
+    </div>
+    <div class="status-msg" id="statusMsg"></div>
+  </div>
+
+  <div class="records-section">
+    <div class="records-header">
+      <h2>Batch Records <span class="count-badge" id="recordCount">—</span></h2>
+      <div class="records-toolbar">
+        <div class="search-wrap">
+          <span class="search-icon">⌕</span>
+          <input type="text" class="search-box" id="searchBox" placeholder="Search batch no…" oninput="onSearch()" />
+        </div>
+        <button class="load-btn" onclick="loadRecords()">↓ Load Records</button>
+      </div>
+    </div>
+    <div id="recordsArea" class="empty-state">Records will appear here after loading.</div>
+  </div>
+
+<!-- Confirmation Modal -->
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Confirm Batch Record</h3>
+      <div class="modal-batch" id="modalBatch"></div>
+    </div>
+    <div class="dup-warning" id="dupWarning">
+      ⚠ Duplicate detected — this batch number already exists in the sheet. Please go back and regenerate.
+    </div>
+    <div class="modal-body">
+      <div class="modal-grid">
+        <div class="modal-row"><span class="modal-label">Customer</span><span class="modal-value" id="m_customer"></span></div>
+        <div class="modal-row"><span class="modal-label">Invoice No</span><span class="modal-value" id="m_invoice"></span></div>
+        <div class="modal-row"><span class="modal-label">Invoice Date</span><span class="modal-value" id="m_invoiceDate"></span></div>
+        <div class="modal-row"><span class="modal-label">Product / SKU</span><span class="modal-value" id="m_product"></span></div>
+        <div class="modal-row"><span class="modal-label">Quantity</span><span class="modal-value" id="m_quantity"></span></div>
+        <div class="modal-row"><span class="modal-label">No. of Bags</span><span class="modal-value" id="m_bags"></span></div>
+        <div class="modal-row"><span class="modal-label">Net Weight / Bag</span><span class="modal-value" id="m_netWeight"></span></div>
+        <div class="modal-row"><span class="modal-label">Packing Date</span><span class="modal-value" id="m_packingDate"></span></div>
+        <div class="modal-row no-border"><span class="modal-label">Expiry Date</span><span class="modal-value" id="m_expiryDate"></span></div>
+        <div class="modal-row full no-border"><span class="modal-label">Notes</span><span class="modal-value" id="m_notes"></span></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-edit" onclick="closeModal()">← Edit</button>
+      <button class="btn-confirm" id="btnConfirm" onclick="confirmSave()">Save to Google Sheets</button>
+    </div>
+  </div>
+</div>
+
+<!-- View Record Modal -->
+<div class="view-modal-overlay hidden" id="viewModalOverlay" onclick="closeViewModal(event)">
+  <div class="view-modal">
+    <div class="view-modal-header">
+      <div>
+        <h3>Batch Record</h3>
+        <div class="view-modal-batch" id="vm_batch"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+        <button class="close-btn" onclick="closeViewModal()">✕</button>
+        <button class="print-btn" onclick="printLabel(currentViewRecord)">🖨 Print Label</button>
+      </div>
+    </div>
+    <div class="view-modal-body">
+      <div class="modal-grid">
+        <div class="modal-row"><span class="modal-label">Customer</span><span class="modal-value" id="vm_customer"></span></div>
+        <div class="modal-row"><span class="modal-label">Invoice No</span><span class="modal-value" id="vm_invoice"></span></div>
+        <div class="modal-row"><span class="modal-label">Invoice Date</span><span class="modal-value" id="vm_invoiceDate"></span></div>
+        <div class="modal-row"><span class="modal-label">Product / SKU</span><span class="modal-value" id="vm_product"></span></div>
+        <div class="modal-row"><span class="modal-label">Quantity</span><span class="modal-value" id="vm_quantity"></span></div>
+        <div class="modal-row"><span class="modal-label">No. of Bags</span><span class="modal-value" id="vm_bags"></span></div>
+        <div class="modal-row"><span class="modal-label">Net Weight / Bag</span><span class="modal-value" id="vm_netWeight"></span></div>
+        <div class="modal-row"><span class="modal-label">Packing Date</span><span class="modal-value" id="vm_packingDate"></span></div>
+        <div class="modal-row no-border"><span class="modal-label">Expiry Date</span><span class="modal-value" id="vm_expiryDate"></span></div>
+        <div class="modal-row full no-border"><span class="modal-label">Notes</span><span class="modal-value" id="vm_notes"></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+  const STORAGE_KEY = 'oi_batch_script_url';
+  let currentBatch = '';
+  let allRecords = [];
+  const PAGE_SIZE = 5;
+
+  window.onload = () => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      document.getElementById('scriptUrl').value = saved;
+      loadRecords();
+      loadCustomers();
+    }
+    generateBatch();
+    setDefaultDates();
+  };
+
+  async function loadCustomers() {
+    const scriptUrl = localStorage.getItem(STORAGE_KEY);
+    if (!scriptUrl) return;
+    try {
+      const res = await fetch(scriptUrl + '?type=customers');
+      const data = await res.json();
+      const customers = data.map(r => r['Name']).filter(Boolean);
+      populateCustomerDropdown(customers);
+    } catch (err) {
+      console.warn('Could not load customers:', err);
+    }
+  }
+
+  function populateCustomerDropdown(customers) {
+    const sel = document.getElementById('customer');
+    const current = sel.value;
+    sel.innerHTML = '<option value="">— Select customer —</option>';
+    customers.sort().forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      if (name === current) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+
+  function toggleAddCustomer(e) {
+    e.preventDefault();
+    const form = document.getElementById('addCustomerForm');
+    form.classList.toggle('open');
+    if (form.classList.contains('open')) {
+      document.getElementById('newCustomerName').focus();
+    } else {
+      document.getElementById('newCustomerName').value = '';
+    }
+  }
+
+  async function saveNewCustomer() {
+    const input = document.getElementById('newCustomerName');
+    const name = input.value.trim();
+    if (!name) return;
+    const scriptUrl = localStorage.getItem(STORAGE_KEY);
+    if (!scriptUrl) {
+      showStatus('Configure Google Sheets URL first.', 'error');
+      return;
+    }
+
+    // Check duplicate in dropdown
+    const existing = Array.from(document.getElementById('customer').options)
+      .map(o => o.value.toLowerCase());
+    if (existing.includes(name.toLowerCase())) {
+      input.style.borderColor = 'var(--danger)';
+      setTimeout(() => input.style.borderColor = '', 1500);
+      return;
+    }
+
+    input.disabled = true;
+    try {
+      await fetch(scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'customer', name }),
+      });
+      // Optimistically add to dropdown
+      const sel = document.getElementById('customer');
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      // Insert alphabetically
+      const opts = Array.from(sel.options).slice(1); // skip placeholder
+      const insertBefore = opts.find(o => o.value.toLowerCase() > name.toLowerCase());
+      if (insertBefore) sel.insertBefore(opt, insertBefore);
+      else sel.appendChild(opt);
+      sel.value = name;
+      input.value = '';
+      document.getElementById('addCustomerForm').classList.remove('open');
+    } catch (err) {
+      showStatus('Could not save customer. Check your connection.', 'error');
+    }
+    input.disabled = false;
+  }
+
+  function setDefaultDates() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('packingDate').value = today;
+    document.getElementById('invoiceDate').value = today;
+    const expiry = new Date();
+    expiry.setFullYear(expiry.getFullYear() + 1);
+    document.getElementById('expiryDate').value = expiry.toISOString().split('T')[0];
+  }
+
+  // 7 chars: 2 alpha + 5 digits, letters non-adjacent
+  function generateBatch() {
+    const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const digits  = '0123456789';
+
+    // 7 positions (indices 0–6). Pick pos1 in [0..4], pos2 in [pos1+2..6]
+    const pos1 = Math.floor(Math.random() * 5);
+    const pos2 = (pos1 + 2) + Math.floor(Math.random() * (6 - (pos1 + 2) + 1));
+
+    const chars = Array.from({length: 7}, () => digits[Math.floor(Math.random() * 10)]);
+    chars[pos1] = letters[Math.floor(Math.random() * letters.length)];
+    chars[pos2] = letters[Math.floor(Math.random() * letters.length)];
+
+    currentBatch = chars.join('');
+
+    document.getElementById('batchDisplay').innerHTML = chars.map((c, i) =>
+      (i === pos1 || i === pos2) ? `<span class="alpha">${c}</span>` : c
+    ).join('');
+  }
+
+  function toggleConfig() {
+    document.getElementById('configPanel').classList.toggle('open');
+  }
+
+  function saveConfig() {
+    const url = document.getElementById('scriptUrl').value.trim();
+    if (!url) return;
+    localStorage.setItem(STORAGE_KEY, url);
+    showStatus('Config saved!', 'success');
+    setTimeout(() => document.getElementById('configPanel').classList.remove('open'), 900);
+  }
+
+  function showScriptHelp(e) {
+    e.preventDefault();
+    const el = document.getElementById('scriptHelp');
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    if (el.textContent) return;
+    el.textContent =
+`// 1. Google Sheets → Extensions → Apps Script
+// 2. Paste code below → Deploy → New deployment
+//    Type: Web App | Execute as: Me | Access: Anyone
+
+function doPost(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const d  = JSON.parse(e.postData.contents);
+
+  // --- Save customer ---
+  if (d.type === 'customer') {
+    let cs = ss.getSheetByName('Customers');
+    if (!cs) cs = ss.insertSheet('Customers');
+    if (cs.getLastRow() === 0) cs.appendRow(['Name']);
+    cs.appendRow([d.name]);
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'ok' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // --- Save batch ---
+  let sheet = ss.getSheetByName('Batches');
+  if (!sheet) sheet = ss.insertSheet('Batches');
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(['Batch No','Customer','Invoice No','Invoice Date',
+      'Product','Quantity','Bags','Net Weight','Packing Date','Expiry Date','Notes','Saved At']);
+  }
+  sheet.appendRow([
+    d.batch, d.customer, d.invoice, d.invoiceDate,
+    d.product, d.quantity, d.bags, d.netWeight, d.packingDate, d.expiryDate,
+    d.notes, new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+  ]);
+
+  return ContentService
+    .createTextOutput(JSON.stringify({ status: 'ok' }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e) {
+  const ss   = SpreadsheetApp.getActiveSpreadsheet();
+  const type = e && e.parameter && e.parameter.type;
+
+  // --- Fetch customers ---
+  if (type === 'customers') {
+    const cs = ss.getSheetByName('Customers');
+    if (!cs || cs.getLastRow() < 2)
+      return ContentService.createTextOutput(JSON.stringify([]))
+        .setMimeType(ContentService.MimeType.JSON);
+    const data    = cs.getDataRange().getValues();
+    const headers = data[0];
+    const rows    = data.slice(1).map(row => {
+      const obj = {};
+      headers.forEach((h, i) => obj[h] = row[i]);
+      return obj;
+    });
+    return ContentService
+      .createTextOutput(JSON.stringify(rows))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // --- Fetch batches ---
+  const sheet = ss.getSheetByName('Batches');
+  if (!sheet || sheet.getLastRow() < 2)
+    return ContentService.createTextOutput(JSON.stringify([]))
+      .setMimeType(ContentService.MimeType.JSON);
+  const data    = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const rows    = data.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = row[i]);
+    return obj;
+  });
+  return ContentService
+    .createTextOutput(JSON.stringify(rows))
+    .setMimeType(ContentService.MimeType.JSON);
+}`;
+  }
+
+  let pendingPayload = null;
+
+  async function submitBatch() {
+    const scriptUrl = localStorage.getItem(STORAGE_KEY);
+    if (!scriptUrl) {
+      showStatus('Please configure Google Sheets URL first (⚙ top right).', 'error');
+      toggleConfig(); return;
+    }
+
+    const customer = document.getElementById('customer').value.trim();
+    const invoice  = document.getElementById('invoice').value.trim();
+    const product  = document.getElementById('product').value.trim();
+    if (!customer || !invoice || !product) {
+      showStatus('Customer, Invoice No, and Product are required.', 'error');
+      return;
+    }
+
+    pendingPayload = {
+      batch:       currentBatch,
+      customer,
+      invoice,
+      invoiceDate: document.getElementById('invoiceDate').value,
+      product,
+      quantity:    document.getElementById('quantity').value,
+      bags:        document.getElementById('bags').value,
+      netWeight:   document.getElementById('netWeight').value ? document.getElementById('netWeight').value + ' Kgs' : '',
+      packingDate: document.getElementById('packingDate').value,
+      expiryDate:  document.getElementById('expiryDate').value,
+      notes:       document.getElementById('notes').value.trim(),
+    };
+
+    // Check for duplicate against cached records
+    const isDup = allRecords.some(r =>
+      (r['Batch No'] || '').toUpperCase() === currentBatch.toUpperCase()
+    );
+
+    openModal(pendingPayload, isDup);
+  }
+
+  function openModal(p, isDup) {
+    // Render batch number with alpha highlights
+    const chars = p.batch.split('');
+    const letters = /[A-Z]/;
+    document.getElementById('modalBatch').innerHTML = chars.map(c =>
+      letters.test(c) ? `<span class="alpha">${c}</span>` : c
+    ).join('');
+
+    const fmt = v => v || '<span class="empty">—</span>';
+    document.getElementById('m_customer').innerHTML    = fmt(p.customer);
+    document.getElementById('m_invoice').innerHTML     = fmt(p.invoice);
+    document.getElementById('m_invoiceDate').innerHTML = fmt(p.invoiceDate);
+    document.getElementById('m_product').innerHTML     = fmt(p.product);
+    document.getElementById('m_quantity').innerHTML    = fmt(p.quantity);
+    document.getElementById('m_bags').innerHTML        = fmt(p.bags);
+    document.getElementById('m_netWeight').innerHTML    = fmt(p.netWeight);
+    document.getElementById('m_packingDate').innerHTML = fmt(p.packingDate);
+    document.getElementById('m_expiryDate').innerHTML  = fmt(p.expiryDate);
+    document.getElementById('m_notes').innerHTML       = fmt(p.notes);
+
+    const dupWarn = document.getElementById('dupWarning');
+    const confirmBtn = document.getElementById('btnConfirm');
+    if (isDup) {
+      dupWarn.classList.add('show');
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'Duplicate — Cannot Save';
+    } else {
+      dupWarn.classList.remove('show');
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Save to Google Sheets';
+    }
+
+    document.getElementById('modalOverlay').classList.remove('hidden');
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.add('hidden');
+    pendingPayload = null;
+  }
+
+  async function confirmSave() {
+    if (!pendingPayload) return;
+    const scriptUrl = localStorage.getItem(STORAGE_KEY);
+    const confirmBtn = document.getElementById('btnConfirm');
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Saving…';
+
+    // no-cors fetch never throws on network success — it always resolves with an opaque response.
+    // Only a genuine network failure (offline, bad URL) throws. So we treat resolve = success.
+    try {
+      await fetch(scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pendingPayload),
+      });
+
+      const savedBatch = pendingPayload.batch;
+      closeModal();
+      showStatus(`✓ Batch ${savedBatch} saved successfully!`, 'success');
+      clearForm();
+      generateBatch();
+      setDefaultDates();
+      // Refresh records list so the new entry appears
+      await loadRecords();
+    } catch (err) {
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Save to Google Sheets';
+      showStatus('Network error — check your internet connection and script URL.', 'error');
+    }
+  }
+
+  function clearForm() {
+    ['invoice','product','quantity','bags','netWeight','notes'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('customer').value = '';
+  }
+
+  async function loadRecords() {
+    const scriptUrl = localStorage.getItem(STORAGE_KEY);
+    if (!scriptUrl) {
+      showStatus('Please configure Google Sheets URL first.', 'error');
+      toggleConfig(); return;
+    }
+
+    document.getElementById('recordsArea').innerHTML = '<div class="empty-state">Loading…</div>';
+
+    try {
+      const res = await fetch(scriptUrl);
+      allRecords = (await res.json()).reverse(); // newest first
+      document.getElementById('searchBox').value = '';
+      renderTable(allRecords, false);
+    } catch (err) {
+      document.getElementById('recordsArea').innerHTML =
+        '<div class="empty-state">Failed to load. Check your script URL.</div>';
+    }
+  }
+
+  function onSearch() {
+    if (!allRecords.length) return;
+    const q = document.getElementById('searchBox').value.trim().toUpperCase();
+    const filtered = q
+      ? allRecords.filter(r => (r['Batch No'] || '').toUpperCase().includes(q))
+      : allRecords;
+    renderTable(filtered, false, !!q);
+  }
+
+  function formatDate(val) {
+    if (!val) return '';
+    // Handle ISO string from Sheets (e.g. 2026-05-14T18:30:00.000Z)
+    const d = new Date(val);
+    if (!isNaN(d)) {
+      // Shift to IST (+5:30) and format as dd-mm-yyyy
+      const ist = new Date(d.getTime() + (5.5 * 60 * 60 * 1000));
+      const dd  = String(ist.getUTCDate()).padStart(2, '0');
+      const mm  = String(ist.getUTCMonth() + 1).padStart(2, '0');
+      const yyyy = ist.getUTCFullYear();
+      return `${dd}-${mm}-${yyyy}`;
+    }
+    return val; // already a plain string like "14-05-2026"
+  }
+
+  function renderTable(records, showAll, isSearch) {
+    document.getElementById('recordCount').textContent = allRecords.length || '—';
+
+    if (!records.length) {
+      document.getElementById('recordsArea').innerHTML =
+        `<div class="no-results-state">${isSearch ? 'No matching batch found.' : 'No records found.'}</div>`;
+      return;
+    }
+
+    const slice   = (showAll || isSearch) ? records : records.slice(0, PAGE_SIZE);
+    const hasMore = !showAll && !isSearch && records.length > PAGE_SIZE;
+
+    const rows = slice.map((r, i) => `
+      <tr onclick="viewRecord('${encodeURIComponent(JSON.stringify(r))}')" title="View details" style="cursor:pointer">
+        <td class="batch-cell">${r['Batch No'] || ''}</td>
+        <td>${r['Customer'] || ''}</td>
+        <td>${r['Invoice No'] || ''}</td>
+        <td>${formatDate(r['Invoice Date'])}</td>
+        <td>${r['Product'] || ''}</td>
+        <td>${r['Quantity'] || ''}</td>
+        <td>${r['Bags'] || ''}</td>
+        <td>${r['Net Weight'] || ''}</td>
+        <td>${formatDate(r['Packing Date'])}</td>
+        <td>${formatDate(r['Expiry Date'])}</td>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;">${r['Notes'] || ''}</td>
+      </tr>`).join('');
+
+    const viewMore = hasMore ? `
+      <div class="view-more-row">
+        <button class="view-more-btn" onclick="expandAll()">View all ${records.length} records ↓</button>
+      </div>` : '';
+
+    document.getElementById('recordsArea').innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Batch No</th><th>Customer</th><th>Invoice No</th>
+              <th>Invoice Date</th><th>Product</th><th>Qty</th><th>Bags</th><th>Net Wt</th>
+              <th>Packing Date</th><th>Expiry Date</th><th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        ${viewMore}
+      </div>`;
+  }
+
+  function expandAll() {
+    const q = document.getElementById('searchBox').value.trim().toUpperCase();
+    const records = q
+      ? allRecords.filter(r => (r['Batch No'] || '').toUpperCase().includes(q))
+      : allRecords;
+    renderTable(records, true);
+  }
+
+  let currentViewRecord = null;
+  function viewRecord(encoded) {
+    const r = JSON.parse(decodeURIComponent(encoded));
+    currentViewRecord = r;
+    const fmt = v => v || '<span class="empty">—</span>';
+    const letters = /[A-Z]/;
+    const batch = (r['Batch No'] || '').split('');
+    document.getElementById('vm_batch').innerHTML = batch.map(c =>
+      letters.test(c) ? `<span class="alpha">${c}</span>` : c
+    ).join('');
+    document.getElementById('vm_customer').innerHTML    = fmt(r['Customer']);
+    document.getElementById('vm_invoice').innerHTML     = fmt(r['Invoice No']);
+    document.getElementById('vm_invoiceDate').innerHTML = fmt(formatDate(r['Invoice Date']));
+    document.getElementById('vm_product').innerHTML     = fmt(r['Product']);
+    document.getElementById('vm_quantity').innerHTML    = fmt(r['Quantity']);
+    document.getElementById('vm_bags').innerHTML        = fmt(r['Bags']);
+    document.getElementById('vm_netWeight').innerHTML   = fmt(r['Net Weight']);
+    document.getElementById('vm_packingDate').innerHTML = fmt(formatDate(r['Packing Date']));
+    document.getElementById('vm_expiryDate').innerHTML  = fmt(formatDate(r['Expiry Date']));
+    document.getElementById('vm_notes').innerHTML       = fmt(r['Notes']);
+    document.getElementById('viewModalOverlay').classList.remove('hidden');
+  }
+
+  function closeViewModal(e) {
+    if (e && e.target !== document.getElementById('viewModalOverlay')) return;
+    document.getElementById('viewModalOverlay').classList.add('hidden');
+  }
+
+  function formatDateLabel(val) {
+    if (!val) return '';
+    const d = new Date(val);
+    if (!isNaN(d)) {
+      const ist = new Date(d.getTime() + (5.5 * 60 * 60 * 1000));
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return `${ist.getUTCDate()} ${months[ist.getUTCMonth()]} ${ist.getUTCFullYear()}`;
+    }
+    // already string like 15-05-2026 → convert
+    const parts = val.split('-');
+    if (parts.length === 3) {
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return `${parseInt(parts[0])} ${months[parseInt(parts[1])-1]} ${parts[2]}`;
+    }
+    return val;
+  }
+
+  function buildLabelHTML(r) {
+    const product  = r['Product'] || '';
+    const batch    = r['Batch No'] || '';
+    const packing  = formatDateLabel(r['Packing Date']);
+    const expiry   = formatDateLabel(r['Expiry Date']);
+    const netWt    = r['Net Weight'] || '';
+    return `
+      <div class="label-item">
+        <div class="label-header">
+          <div class="label-address">
+            Packed &amp; Marketed by :<br>
+            <strong>M/S OM INTERNATIONAL,</strong>
+            No.49-370-336/1, Ward No.19/1,<br>
+            Gandhinagara, Sagar – 577401, Karnataka.
+          </div>
+          <svg width="9mm" height="9mm" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;margin-top:0.5mm;">
+            <rect x="1" y="1" width="34" height="34" rx="4" ry="4" fill="none" stroke="#1a8c00" stroke-width="2.5"/>
+            <circle cx="18" cy="18" r="10" fill="#1a8c00"/>
+          </svg>
+        </div>
+        <div class="label-row"><span class="label-key">Product</span><span class="label-val">${product}</span></div>
+        <div class="label-row"><span class="label-key">Batch No</span><span class="label-val">${batch}</span></div>
+        <div class="label-row"><span class="label-key">Date of Packaging</span><span class="label-val">${packing}</span></div>
+        <div class="label-row"><span class="label-key">Expiry / Use by</span><span class="label-val">${expiry}</span></div>
+        <div class="label-row"><span class="label-key">FSSAI Lic. No</span><span class="label-val">11222326000341</span></div>
+        <div class="label-row"><span class="label-key">Net Weight (Kgs)</span><span class="label-val">${netWt}</span></div>
+        <div class="label-row" style="border-bottom:none;"><span class="label-key">Customer Care details</span><span class="label-val">8861317324</span></div>
+        <div class="label-footer-row">*keep it in a cool &amp; dry place away from direct sunlight.</div>
+        <div class="label-nrs">Not for Retail Sale</div>
+      </div>`;
+  }
+
+  function printLabel(r) {
+    if (!r) return;
+    const totalLabels = parseInt(r['Bags']) || 1;
+    const labelHTML   = buildLabelHTML(r);
+    const labels      = Array(totalLabels).fill(labelHTML).join('');
+
+    const printCSS = `
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      @page { size: A4 portrait; margin: 0.2mm 0.25mm 0.70mm 0.25mm; }
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+      body { width: 210mm; background: #fff; }
+      .label-sheet { width: 100%; }
+      .label-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 5mm; row-gap: 5mm; }
+      .label-item {
+        border: 0.3mm solid #000;
+        font-family: Arial, sans-serif;
+        font-size: 7.5pt;
+        color: #000;
+        background: #fff;
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+      .label-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 2mm 2mm 1.5mm 2mm;
+        border-bottom: 0.3mm solid #000;
+        gap: 2mm;
+      }
+      .label-address { font-size: 6.8pt; line-height: 1.4; flex: 1; }
+      .label-address strong { font-size: 7pt; display: block; }
+      /* veg icon is inline SVG */
+      .label-row { display: flex; border-bottom: 0.3mm solid #000; min-height: 5mm; }
+      .label-key { padding: 1.2mm 2mm; width: 40%; font-weight: bold; font-size: 7pt; border-right: 0.3mm solid #000; display: flex; align-items: center; line-height: 1.3; }
+      .label-val { padding: 1.2mm 2mm; flex: 1; font-size: 7pt; display: flex; align-items: center; line-height: 1.3; }
+      .label-footer-row { border-top: 0.3mm solid #000; border-bottom: 0.3mm solid #000; text-align: center; padding: 1mm 2mm; font-size: 6.5pt; font-style: italic; }
+      .label-nrs { text-align: center; padding: 1mm 2mm; font-size: 7pt; font-weight: bold; }
+    `;
+
+    const win = window.open('', '_blank', 'width=900,height=700');
+    win.document.write(`<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<title>Labels — ${r['Batch No'] || 'Batch'}</title>
+<style>${printCSS}</style>
+</head><body>
+<div class="label-sheet"><div class="label-grid">${labels}</div></div>
+<script>window.onload = function(){ window.print(); window.onafterprint = function(){ window.close(); }; }<\/script>
+</body></html>`);
+    win.document.close();
+  }
+
+  function calcNetWeight() {
+    const qty  = parseFloat(document.getElementById('quantity').value);
+    const bags = parseFloat(document.getElementById('bags').value);
+    const nw   = document.getElementById('netWeight');
+    if (qty > 0 && bags > 0) {
+      nw.value = (qty / bags).toFixed(2).replace(/\.00$/, '');
+    } else {
+      nw.value = '';
+    }
+  }
+
+  function showStatus(msg, type) {
+    const el = document.getElementById('statusMsg');
+    el.textContent = msg;
+    el.className = `status-msg ${type}`;
+    if (type === 'success') setTimeout(() => { el.className = 'status-msg'; }, 3500);
+  }
+</script>
+<div id="labelPrintArea"></div>
+</body>
+</html>
