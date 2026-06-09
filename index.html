@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -574,6 +575,71 @@
 
   /* veg icon uses inline SVG — no CSS class needed */
 
+  /* Edit mode in view modal */
+  .vm-view { display: block; }
+  .vm-edit { display: none; }
+  .vm-edit.active { display: block; }
+  .vm-view.hidden { display: none; }
+
+  .edit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 20px 28px;
+  }
+  .edit-field { display: flex; flex-direction: column; gap: 5px; }
+  .edit-field.full { grid-column: 1 / -1; }
+  .edit-field label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 500; }
+  .edit-field input, .edit-field textarea, .edit-field select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .edit-field input:focus, .edit-field textarea:focus, .edit-field select:focus { border-color: var(--accent); }
+  .edit-field textarea { resize: vertical; min-height: 60px; }
+  .edit-field input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
+  .view-modal-footer {
+    padding: 16px 28px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+  }
+  .btn-save-edit {
+    flex: 2;
+    background: var(--accent);
+    border: none;
+    color: #0d0f0e;
+    padding: 11px;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn-save-edit:hover { opacity: 0.88; }
+  .btn-save-edit:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-cancel-edit {
+    flex: 1;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 11px;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-cancel-edit:hover { border-color: var(--muted); }
+
   .label-row {
     display: flex;
     border-bottom: 0.3mm solid #000;
@@ -779,15 +845,18 @@
   <div class="view-modal">
     <div class="view-modal-header">
       <div>
-        <h3>Batch Record</h3>
+        <h3 id="vm_mode_title">Batch Record</h3>
         <div class="view-modal-batch" id="vm_batch"></div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
         <button class="close-btn" onclick="closeViewModal()">✕</button>
-        <button class="print-btn" onclick="printLabel(currentViewRecord)">🖨 Print Label</button>
+        <button class="print-btn vm-view" id="vm_print_btn" onclick="printLabel(currentViewRecord)">🖨 Print Label</button>
+        <button class="print-btn vm-view" id="vm_edit_btn" onclick="switchToEdit()" style="color:var(--warning);border-color:var(--warning);">✎ Edit</button>
       </div>
     </div>
-    <div class="view-modal-body">
+
+    <!-- VIEW mode -->
+    <div class="view-modal-body vm-view" id="vm_view_body">
       <div class="modal-grid">
         <div class="modal-row"><span class="modal-label">Customer</span><span class="modal-value" id="vm_customer"></span></div>
         <div class="modal-row"><span class="modal-label">Invoice No</span><span class="modal-value" id="vm_invoice"></span></div>
@@ -801,6 +870,60 @@
         <div class="modal-row full no-border"><span class="modal-label">Notes</span><span class="modal-value" id="vm_notes"></span></div>
       </div>
     </div>
+
+    <!-- EDIT mode -->
+    <div class="vm-edit" id="vm_edit_body">
+      <div class="edit-grid">
+        <div class="edit-field">
+          <label>Customer</label>
+          <select id="ve_customer"></select>
+        </div>
+        <div class="edit-field">
+          <label>Invoice No</label>
+          <input type="text" id="ve_invoice" />
+        </div>
+        <div class="edit-field">
+          <label>Invoice Date</label>
+          <input type="date" id="ve_invoiceDate" />
+        </div>
+        <div class="edit-field">
+          <label>Product / SKU</label>
+          <input type="text" id="ve_product" />
+        </div>
+        <div class="edit-field">
+          <label>Quantity</label>
+          <input type="number" id="ve_quantity" min="1" />
+        </div>
+        <div class="edit-field">
+          <label>No. of Bags</label>
+          <input type="number" id="ve_bags" min="1" />
+        </div>
+        <div class="edit-field">
+          <label>Net Weight (per bag)</label>
+          <div style="display:flex;gap:0;align-items:stretch;">
+            <input type="number" id="ve_netWeight" min="0" step="0.1" style="flex:1;border-radius:8px 0 0 8px;" />
+            <span style="background:var(--surface2);border:1px solid var(--border);border-left:none;color:var(--muted);padding:9px 12px;border-radius:0 8px 8px 0;font-size:13px;display:flex;align-items:center;">Kgs</span>
+          </div>
+        </div>
+        <div class="edit-field">
+          <label>Packing Date</label>
+          <input type="date" id="ve_packingDate" />
+        </div>
+        <div class="edit-field">
+          <label>Expiry Date</label>
+          <input type="date" id="ve_expiryDate" />
+        </div>
+        <div class="edit-field full">
+          <label>Notes</label>
+          <textarea id="ve_notes"></textarea>
+        </div>
+      </div>
+      <div class="view-modal-footer">
+        <button class="btn-cancel-edit" onclick="switchToView()">Cancel</button>
+        <button class="btn-save-edit" id="ve_save_btn" onclick="saveEdit()">Save Changes</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -970,6 +1093,31 @@ function doPost(e) {
     return ContentService
       .createTextOutput(JSON.stringify({ status: 'ok' }))
       .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // --- Update existing batch ---
+  if (d.type === 'update') {
+    const sheet = ss.getSheetByName('Batches');
+    if (!sheet) return ContentService.createTextOutput(JSON.stringify({status:'error',msg:'Sheet not found'})).setMimeType(ContentService.MimeType.JSON);
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const batchCol = headers.indexOf('Batch No');
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][batchCol] === d.batchNo) {
+        const colMap = {
+          'Customer': d.customer, 'Invoice No': d.invoice, 'Invoice Date': d.invoiceDate,
+          'Product': d.product, 'Quantity': d.quantity, 'Bags': d.bags,
+          'Net Weight': d.netWeight, 'Packing Date': d.packingDate,
+          'Expiry Date': d.expiryDate, 'Notes': d.notes
+        };
+        Object.entries(colMap).forEach(([col, val]) => {
+          const c = headers.indexOf(col);
+          if (c !== -1) sheet.getRange(i + 1, c + 1).setValue(val);
+        });
+        break;
+      }
+    }
+    return ContentService.createTextOutput(JSON.stringify({status:'ok'})).setMimeType(ContentService.MimeType.JSON);
   }
 
   // --- Save batch ---
@@ -1274,6 +1422,130 @@ function doGet(e) {
   function closeViewModal(e) {
     if (e && e.target !== document.getElementById('viewModalOverlay')) return;
     document.getElementById('viewModalOverlay').classList.add('hidden');
+    switchToView(); // reset to view mode on close
+  }
+
+  function switchToEdit() {
+    const r = currentViewRecord;
+    if (!r) return;
+
+    // Populate edit fields
+    // Customer dropdown — reuse existing options
+    const sel = document.getElementById('ve_customer');
+    const mainSel = document.getElementById('customer');
+    sel.innerHTML = mainSel.innerHTML; // copy options from main dropdown
+    sel.value = r['Customer'] || '';
+
+    document.getElementById('ve_invoice').value      = r['Invoice No'] || '';
+    document.getElementById('ve_invoiceDate').value  = isoToInputDate(r['Invoice Date']);
+    document.getElementById('ve_product').value      = r['Product'] || '';
+    document.getElementById('ve_quantity').value     = r['Quantity'] || '';
+    document.getElementById('ve_bags').value         = r['Bags'] || '';
+    // Net weight — strip " Kgs" suffix if present
+    const nw = (r['Net Weight'] || '').replace(/\s*Kgs?$/i, '').trim();
+    document.getElementById('ve_netWeight').value    = nw;
+    document.getElementById('ve_packingDate').value  = isoToInputDate(r['Packing Date']);
+    document.getElementById('ve_expiryDate').value   = isoToInputDate(r['Expiry Date']);
+    document.getElementById('ve_notes').value        = r['Notes'] || '';
+
+    document.getElementById('vm_view_body').classList.add('hidden');
+    document.getElementById('vm_edit_body').classList.add('active');
+    document.getElementById('vm_mode_title').textContent = 'Edit Record';
+    document.getElementById('vm_print_btn').style.display = 'none';
+    document.getElementById('vm_edit_btn').style.display  = 'none';
+  }
+
+  function switchToView() {
+    document.getElementById('vm_view_body').classList.remove('hidden');
+    document.getElementById('vm_edit_body').classList.remove('active');
+    document.getElementById('vm_mode_title').textContent = 'Batch Record';
+    document.getElementById('vm_print_btn').style.display = '';
+    document.getElementById('vm_edit_btn').style.display  = '';
+  }
+
+  function isoToInputDate(val) {
+    if (!val) return '';
+    const d = new Date(val);
+    if (!isNaN(d)) {
+      const ist = new Date(d.getTime() + (5.5 * 60 * 60 * 1000));
+      return ist.toISOString().split('T')[0];
+    }
+    // already dd-mm-yyyy
+    const parts = val.toString().split('-');
+    if (parts.length === 3 && parts[0].length === 2) {
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    return val;
+  }
+
+  async function saveEdit() {
+    const scriptUrl = localStorage.getItem(STORAGE_KEY);
+    if (!scriptUrl) { showStatus('Configure Google Sheets URL first.', 'error'); return; }
+    const r = currentViewRecord;
+    if (!r) return;
+
+    const nwVal = document.getElementById('ve_netWeight').value.trim();
+    const updated = {
+      type:        'update',
+      batchNo:     r['Batch No'],
+      customer:    document.getElementById('ve_customer').value.trim(),
+      invoice:     document.getElementById('ve_invoice').value.trim(),
+      invoiceDate: document.getElementById('ve_invoiceDate').value,
+      product:     document.getElementById('ve_product').value.trim(),
+      quantity:    document.getElementById('ve_quantity').value,
+      bags:        document.getElementById('ve_bags').value,
+      netWeight:   nwVal ? nwVal + ' Kgs' : '',
+      packingDate: document.getElementById('ve_packingDate').value,
+      expiryDate:  document.getElementById('ve_expiryDate').value,
+      notes:       document.getElementById('ve_notes').value.trim(),
+    };
+
+    const btn = document.getElementById('ve_save_btn');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    try {
+      await fetch(scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated),
+      });
+
+      // Update local cache
+      const idx = allRecords.findIndex(rec => rec['Batch No'] === r['Batch No']);
+      if (idx !== -1) {
+        allRecords[idx] = {
+          ...allRecords[idx],
+          'Customer':     updated.customer,
+          'Invoice No':   updated.invoice,
+          'Invoice Date': updated.invoiceDate,
+          'Product':      updated.product,
+          'Quantity':     updated.quantity,
+          'Bags':         updated.bags,
+          'Net Weight':   updated.netWeight,
+          'Packing Date': updated.packingDate,
+          'Expiry Date':  updated.expiryDate,
+          'Notes':        updated.notes,
+        };
+        currentViewRecord = allRecords[idx];
+      }
+
+      switchToView();
+      // Refresh view modal display
+      viewRecord(encodeURIComponent(JSON.stringify(currentViewRecord)));
+      document.getElementById('viewModalOverlay').classList.remove('hidden');
+      showStatus(`✓ Record updated successfully!`, 'success');
+      // Re-render table
+      const q = document.getElementById('searchBox').value.trim().toUpperCase();
+      const records = q ? allRecords.filter(rec => (rec['Batch No']||'').toUpperCase().includes(q)) : allRecords;
+      renderTable(records, false, !!q);
+    } catch (err) {
+      showStatus('Error saving. Check your connection.', 'error');
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Save Changes';
   }
 
   function formatDateLabel(val) {
@@ -1332,32 +1604,15 @@ function doGet(e) {
     const labels      = Array(totalLabels).fill(labelHTML).join('');
 
     const printCSS = `
-      * { margin: 0; padding: 0; box-sizing: border-box; }
+      * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
       @page { size: A4 portrait; margin: 0.2mm 0.25mm 0.70mm 0.25mm; }
-      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
       body { width: 210mm; background: #fff; }
       .label-sheet { width: 100%; }
       .label-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 5mm; row-gap: 5mm; }
-      .label-item {
-        border: 0.3mm solid #000;
-        font-family: Arial, sans-serif;
-        font-size: 7.5pt;
-        color: #000;
-        background: #fff;
-        page-break-inside: avoid;
-        break-inside: avoid;
-      }
-      .label-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        padding: 2mm 2mm 1.5mm 2mm;
-        border-bottom: 0.3mm solid #000;
-        gap: 2mm;
-      }
+      .label-item { border: 0.3mm solid #000; font-family: Arial, sans-serif; font-size: 7.5pt; color: #000; background: #fff; page-break-inside: avoid; break-inside: avoid; }
+      .label-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 2mm 2mm 1.5mm 2mm; border-bottom: 0.3mm solid #000; gap: 2mm; }
       .label-address { font-size: 6.8pt; line-height: 1.4; flex: 1; }
       .label-address strong { font-size: 7pt; display: block; }
-      /* veg icon is inline SVG */
       .label-row { display: flex; border-bottom: 0.3mm solid #000; min-height: 5mm; }
       .label-key { padding: 1.2mm 2mm; width: 40%; font-weight: bold; font-size: 7pt; border-right: 0.3mm solid #000; display: flex; align-items: center; line-height: 1.3; }
       .label-val { padding: 1.2mm 2mm; flex: 1; font-size: 7pt; display: flex; align-items: center; line-height: 1.3; }
@@ -1365,17 +1620,35 @@ function doGet(e) {
       .label-nrs { text-align: center; padding: 1mm 2mm; font-size: 7pt; font-weight: bold; }
     `;
 
-    const win = window.open('', '_blank', 'width=900,height=700');
-    win.document.write(`<!DOCTYPE html>
+    const fullHTML = `<!DOCTYPE html>
 <html><head>
 <meta charset="UTF-8">
-<title>Labels — ${r['Batch No'] || 'Batch'}</title>
+<title>Labels</title>
 <style>${printCSS}</style>
 </head><body>
 <div class="label-sheet"><div class="label-grid">${labels}</div></div>
-<script>window.onload = function(){ window.print(); window.onafterprint = function(){ window.close(); }; }<\/script>
-</body></html>`);
-    win.document.close();
+</body></html>`;
+
+    // Use hidden iframe — no popup blocker issues
+    let iframe = document.getElementById('printFrame');
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.id = 'printFrame';
+      iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:210mm;height:297mm;border:none;';
+      document.body.appendChild(iframe);
+    }
+
+    const iDoc = iframe.contentWindow.document;
+    iDoc.open();
+    iDoc.write(fullHTML);
+    iDoc.close();
+
+    iframe.onload = () => {
+      setTimeout(() => {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      }, 500);
+    };
   }
 
   function calcNetWeight() {
