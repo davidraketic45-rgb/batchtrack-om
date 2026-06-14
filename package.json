@@ -10,6 +10,9 @@
     "start": "electron .",
     "build": "electron-builder --win --x64"
   },
+  "dependencies": {
+    "electron-updater": "^6.1.7"
+  },
   "devDependencies": {
     "electron": "^29.0.0",
     "electron-builder": "^24.0.0"
@@ -22,6 +25,11 @@
       "main.js",
       "icon.png"
     ],
+    "publish": {
+      "provider": "github",
+      "owner": "davidraketic45-rgb",
+      "repo": "batchtrack-om"
+    },
     "win": {
       "target": "nsis",
       "icon": "icon.png"
