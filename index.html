@@ -943,7 +943,7 @@
 <script>
   const STORAGE_KEY = 'oi_batch_script_url';
 
-  const APP_VERSION = '1.1.3';
+  const APP_VERSION = '1.1.4';
   const GITHUB_REPO = 'Davidraketic45-rgb/batchtrack-om';
 
   async function checkForUpdates() {
@@ -1650,68 +1650,25 @@ function doGet(e) {
       </div>`;
   }
 
-  let previewRecord = null;
   let labelsPerSheet = 8;
 
   function printLabel(r) {
     if (!r) return;
-    previewRecord = r;
-    const totalLabels = parseInt(r['Bags']) || 1;
-    const labelHTML   = buildLabelHTML(r);
-    const labels      = Array(totalLabels).fill(labelHTML).join('');
-
-    // Show preview
-    document.getElementById('previewInfo').textContent =
-      `${totalLabels} label${totalLabels > 1 ? 's' : ''} · ${Math.ceil(totalLabels / labelsPerSheet)} page${Math.ceil(totalLabels/labelsPerSheet)>1?'s':''}  ·  Batch: ${r['Batch No'] || ''}`;
-
-    refreshPreviewGrid(labels);
-    document.getElementById('previewOverlay').classList.remove('hidden');
-  }
-
-  function refreshPreviewGrid(labels) {
-    const cols = labelsPerSheet === 6 ? 2 : 2;
-    const rows = labelsPerSheet === 6 ? 3 : 4;
-    const colGap = '5mm';
-    const rowGap = '5mm';
-    document.getElementById('previewContent').innerHTML =
-      `<div style="display:grid;grid-template-columns:1fr 1fr;column-gap:${colGap};row-gap:${rowGap};">${labels}</div>`;
+    doPrintDirect(r);
   }
 
   function setLabelsPerSheet(n) {
     labelsPerSheet = n;
-    // Update toggle button styles
     document.getElementById('lps8btn').style.background = n === 8 ? 'var(--accent)' : 'none';
     document.getElementById('lps8btn').style.color      = n === 8 ? '#0d0f0e' : 'var(--muted)';
     document.getElementById('lps6btn').style.background = n === 6 ? 'var(--accent)' : 'none';
     document.getElementById('lps6btn').style.color      = n === 6 ? '#0d0f0e' : 'var(--muted)';
-    // Update info text
-    if (previewRecord) {
-      const totalLabels = parseInt(previewRecord['Bags']) || 1;
-      document.getElementById('previewInfo').textContent =
-        `${totalLabels} label${totalLabels > 1 ? 's' : ''} · ${Math.ceil(totalLabels / n)} page${Math.ceil(totalLabels/n)>1?'s':''}  ·  Batch: ${previewRecord['Batch No'] || ''}`;
-      // Rebuild labels
-      const labelHTML = buildLabelHTML(previewRecord);
-      const labels    = Array(totalLabels).fill(labelHTML).join('');
-      refreshPreviewGrid(labels);
-    }
   }
 
-  function closePreview() {
-    document.getElementById('previewOverlay').classList.add('hidden');
-    previewRecord = null;
-  }
-
-  // Clicking outside preview content closes it
-  document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('previewOverlay').addEventListener('click', function(e) {
-      if (e.target === this) closePreview();
-    });
-  });
-
-  function doPrint() {
-    if (!previewRecord) return;
-    const totalLabels = parseInt(previewRecord['Bags']) || 1;
-    const labelHTML   = buildLabelHTML(previewRecord);
+  function doPrintDirect(r) {
+    if (!r) return;
+    const totalLabels = parseInt(r['Bags']) || 1;
+    const labelHTML   = buildLabelHTML(r);
     const labels      = Array(totalLabels).fill(labelHTML).join('');
 
     const printCSS = `
@@ -1746,15 +1703,31 @@ function doGet(e) {
     pf.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;border:none;z-index:9999;background:#fff;';
     document.body.appendChild(pf);
     const pdoc = pf.contentDocument || pf.contentWindow.document;
-    pdoc.open();
-    pdoc.write(fullHTML);
-    pdoc.close();
-    setTimeout(() => {
-      pf.contentWindow.focus();
-      pf.contentWindow.print();
-      // Remove iframe after print dialog closes
-      pf.contentWindow.onafterprint = () => { pf.remove(); };
-    }, 600);
+    // Open in a new window — works in both browser and Electron
+    const printWin = window.open('', '_blank', 'width=1100,height=800,menubar=yes,toolbar=yes');
+    if (printWin) {
+      printWin.document.open();
+      printWin.document.write(fullHTML);
+      printWin.document.close();
+      printWin.onload = () => {
+        setTimeout(() => { printWin.focus(); printWin.print(); }, 600);
+      };
+    } else {
+      // Fallback: write into hidden iframe if popup blocked
+      let pf = document.getElementById('printFrame');
+      if (pf) pf.remove();
+      pf = document.createElement('iframe');
+      pf.id = 'printFrame';
+      pf.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;border:none;z-index:9999;background:#fff;';
+      document.body.appendChild(pf);
+      const pdoc = pf.contentDocument || pf.contentWindow.document;
+      pdoc.open(); pdoc.write(fullHTML); pdoc.close();
+      setTimeout(() => {
+        pf.contentWindow.focus();
+        pf.contentWindow.print();
+        pf.contentWindow.onafterprint = () => { pf.remove(); };
+      }, 600);
+    }
   }
 
 
@@ -1778,21 +1751,5 @@ function doGet(e) {
 </script>
 <div id="labelPrintArea"></div>
 
-<!-- Label Preview Modal -->
-<div class="preview-overlay hidden" id="previewOverlay">
-  <div class="preview-toolbar">
-    <div>
-      <h3>Label Preview</h3>
-      <div class="preview-info" id="previewInfo"></div>
-    </div>
-    <div class="preview-toolbar-btns">
-      <button class="preview-close-btn" onclick="closePreview()">✕ Close</button>
-      <button class="preview-print-btn" onclick="doPrint()">🖨 Print</button>
-    </div>
-  </div>
-  <div class="preview-sheet-wrap">
-    <div id="previewContent"></div>
-  </div>
-</div>
 </body>
 </html>
