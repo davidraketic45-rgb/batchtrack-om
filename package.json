@@ -1,6 +1,6 @@
 {
   "name": "batchtrack-om",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Batch number generator and tracker for Om International",
   "main": "main.js",
   "author": "Om International",
