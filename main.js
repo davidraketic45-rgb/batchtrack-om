@@ -21,7 +21,23 @@ function createWindow() {
 
   mainWindow.loadFile('index.html');
 
+  // Allow window.open for print windows
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('data:')) {
+      // Allow data URIs for print
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          width: 900,
+          height: 700,
+          autoHideMenuBar: true,
+          webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+          }
+        }
+      };
+    }
     shell.openExternal(url);
     return { action: 'deny' };
   });
@@ -30,13 +46,11 @@ function createWindow() {
     mainWindow = null;
   });
 
-  // Check for updates after window loads
   mainWindow.once('ready-to-show', () => {
     autoUpdater.checkForUpdatesAndNotify();
   });
 }
 
-// Auto-updater events
 autoUpdater.on('update-available', () => {
   dialog.showMessageBox(mainWindow, {
     type: 'info',
