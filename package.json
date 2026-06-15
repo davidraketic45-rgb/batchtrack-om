@@ -1,6 +1,6 @@
 {
   "name": "batchtrack-om",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Batch number generator and tracker for Om International",
   "main": "main.js",
   "author": "Om International",
@@ -9,9 +9,6 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder --win --x64"
-  },
-  "dependencies": {
-    "electron-updater": "^6.1.7"
   },
   "devDependencies": {
     "electron": "^29.0.0",
@@ -23,7 +20,6 @@
     "files": [
       "index.html",
       "main.js",
-      "preload.js",
       "icon.png"
     ],
     "publish": {
