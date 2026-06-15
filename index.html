@@ -943,22 +943,35 @@
   async function checkForUpdates() {
     try {
       const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
-      if (!res.ok) return;
+      if (!res.ok) {
+        showUpdateBar(`Update check failed: HTTP ${res.status}`, null, '#ff6b6b');
+        return;
+      }
       const data = await res.json();
-      const latest = data.tag_name.replace(/^v/, '');
-      if (latest && latest !== APP_VERSION) {
-        const bar = document.getElementById('updateBar');
+      const latest = (data.tag_name || '').replace(/^v/, '');
+      if (!latest) return;
+      if (latest !== APP_VERSION) {
         const downloadUrl = (data.assets || []).find(a => a.name.endsWith('.exe'))?.browser_download_url || data.html_url;
-        document.getElementById('updateMsg').textContent = `⬆ BatchTrack v${latest} is available!`;
-        const btn = document.getElementById('updateBtn');
-        btn.textContent = 'Download Update';
-        btn.onclick = () => window.open(downloadUrl, '_blank') || (window.location.href = downloadUrl);
-        btn.style.display = 'block';
-        bar.style.display = 'flex';
+        showUpdateBar(`⬆ BatchTrack v${latest} is available!`, downloadUrl);
       }
     } catch(e) {
-      console.log('Update check failed:', e);
+      showUpdateBar(`Update check error: ${e.message}`, null, '#ff6b6b');
     }
+  }
+
+  function showUpdateBar(msg, downloadUrl, bg) {
+    const bar = document.getElementById('updateBar');
+    bar.style.background = bg || '#ffd166';
+    document.getElementById('updateMsg').textContent = msg;
+    const btn = document.getElementById('updateBtn');
+    if (downloadUrl) {
+      btn.textContent = 'Download Update';
+      btn.onclick = () => { window.open(downloadUrl, '_blank'); };
+      btn.style.display = 'block';
+    } else {
+      btn.style.display = 'none';
+    }
+    bar.style.display = 'flex';
   }
 
   function triggerUpdate() {}
