@@ -4,6 +4,10 @@ const path = require('path');
 
 let mainWindow;
 
+// Configure updater
+autoUpdater.autoDownload = true;
+autoUpdater.autoInstallOnAppQuit = true;
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -24,7 +28,6 @@ function createWindow() {
   // Allow window.open for print windows
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('data:')) {
-      // Allow data URIs for print
       return {
         action: 'allow',
         overrideBrowserWindowOptions: {
@@ -46,25 +49,38 @@ function createWindow() {
     mainWindow = null;
   });
 
-  mainWindow.once('ready-to-show', () => {
-    autoUpdater.checkForUpdatesAndNotify();
+  // Check for updates 5 seconds after launch
+  mainWindow.webContents.once('did-finish-load', () => {
+    setTimeout(() => {
+      autoUpdater.checkForUpdates();
+    }, 5000);
   });
 }
 
-autoUpdater.on('update-available', () => {
+autoUpdater.on('checking-for-update', () => {
+  console.log('Checking for update...');
+});
+
+autoUpdater.on('update-available', (info) => {
+  console.log('Update available:', info.version);
   dialog.showMessageBox(mainWindow, {
     type: 'info',
     title: 'Update Available',
-    message: 'A new version of BatchTrack is available. It will download in the background.',
+    message: `BatchTrack v${info.version} is available and will download in the background.`,
     buttons: ['OK'],
   });
 });
 
-autoUpdater.on('update-downloaded', () => {
+autoUpdater.on('update-not-available', (info) => {
+  console.log('Already on latest version:', info.version);
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  console.log('Update downloaded:', info.version);
   dialog.showMessageBox(mainWindow, {
     type: 'info',
     title: 'Update Ready',
-    message: 'Update downloaded. BatchTrack will restart to apply the update.',
+    message: `BatchTrack v${info.version} is ready. Restart now to apply the update.`,
     buttons: ['Restart Now', 'Later'],
   }).then(result => {
     if (result.response === 0) {
@@ -74,7 +90,13 @@ autoUpdater.on('update-downloaded', () => {
 });
 
 autoUpdater.on('error', (err) => {
-  console.error('Auto-updater error:', err);
+  console.error('Auto-updater error:', err.message);
+  dialog.showMessageBox(mainWindow, {
+    type: 'error',
+    title: 'Update Error',
+    message: 'Could not check for updates: ' + err.message,
+    buttons: ['OK'],
+  });
 });
 
 app.whenReady().then(createWindow);
