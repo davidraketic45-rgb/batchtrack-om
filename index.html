@@ -1684,16 +1684,23 @@ function doGet(e) {
 
     // Write to a hidden div and use Electron's webContents.print via a dedicated print window
     // Use data URI which works in Electron without security restrictions
-    const dataUri = 'data:text/html;charset=utf-8,' + encodeURIComponent(fullHTML);
-    const printWin = window.open(dataUri, '_blank', 'width=900,height=700');
-    if (printWin) {
-      printWin.onload = () => {
-        setTimeout(() => {
-          printWin.print();
-          printWin.onafterprint = () => printWin.close();
-        }, 800);
-      };
-    }
+    // Write into a hidden iframe in the same page — works in Electron
+    let pf = document.getElementById('printFrame');
+    if (pf) pf.remove();
+    pf = document.createElement('iframe');
+    pf.id = 'printFrame';
+    pf.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;border:none;z-index:9999;background:#fff;';
+    document.body.appendChild(pf);
+    const pdoc = pf.contentDocument || pf.contentWindow.document;
+    pdoc.open();
+    pdoc.write(fullHTML);
+    pdoc.close();
+    setTimeout(() => {
+      pf.contentWindow.focus();
+      pf.contentWindow.print();
+      // Remove iframe after print dialog closes
+      pf.contentWindow.onafterprint = () => { pf.remove(); };
+    }, 600);
   }
 
 
