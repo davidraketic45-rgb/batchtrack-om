@@ -1,6 +1,6 @@
 {
   "name": "batchtrack-om",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Batch number generator and tracker for Om International",
   "main": "main.js",
   "author": "Om International",
@@ -23,11 +23,12 @@
     "files": [
       "index.html",
       "main.js",
+      "preload.js",
       "icon.png"
     ],
     "publish": {
       "provider": "github",
-      "owner": "davidraketic45-rgb",
+      "owner": "Davidraketic45-rgb",
       "repo": "batchtrack-om"
     },
     "win": {
