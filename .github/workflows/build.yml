@@ -22,6 +22,10 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Get version from package.json
+        id: pkg
+        run: echo "version=$(node -p "require('./package.json').version")" >> $env:GITHUB_OUTPUT
+
       - name: Build Windows installer
         run: npm run build
         env:
@@ -30,9 +34,12 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ github.run_number }}
-          name: BatchTrack v${{ github.run_number }}
-          files: dist/*.exe
+          tag_name: v${{ steps.pkg.outputs.version }}
+          name: BatchTrack v${{ steps.pkg.outputs.version }}
+          files: |
+            dist/*.exe
+            dist/*.blockmap
+            dist/latest.yml
           draft: false
           prerelease: false
         env:
