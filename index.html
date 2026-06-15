@@ -943,7 +943,7 @@
 <script>
   const STORAGE_KEY = 'oi_batch_script_url';
 
-  const APP_VERSION = '1.1.4';
+  const APP_VERSION = '1.1.5';
   const GITHUB_REPO = 'Davidraketic45-rgb/batchtrack-om';
 
   async function checkForUpdates() {
@@ -1619,8 +1619,8 @@ function doGet(e) {
   function buildLabelHTML(r) {
     const product  = r['Product'] || '';
     const batch    = r['Batch No'] || '';
-    const packing  = formatDateLabel(r['Expiry Date']);
-    const expiry   = formatDateLabel(r['Packing Date']);
+    const packing  = formatDateLabel(r['Packing Date']);
+    const expiry   = formatDateLabel(r['Expiry Date']);
     const netWt    = r['Net Weight'] || '';
     return `
       <div class="label-item">
