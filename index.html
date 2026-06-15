@@ -937,7 +937,7 @@
 <script>
   const STORAGE_KEY = 'oi_batch_script_url';
 
-  const APP_VERSION = '1.1.0';
+  const APP_VERSION = '1.1.1';
   const GITHUB_REPO = 'Davidraketic45-rgb/batchtrack-om';
 
   async function checkForUpdates() {
@@ -988,6 +988,7 @@
     }
     generateBatch();
     setDefaultDates();
+    setTimeout(checkForUpdates, 5000);
   };
 
   async function loadCustomers() {
