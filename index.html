@@ -701,6 +701,12 @@
 <body>
 <div class="app">
 
+  <!-- Update notification bar -->
+  <div id="updateBar" style="display:none;background:#ffd166;color:#0d0f0e;padding:10px 24px;font-family:'Syne',sans-serif;font-size:13px;font-weight:600;display:none;align-items:center;justify-content:space-between;gap:12px;border-radius:10px;margin-bottom:16px;">
+    <span id="updateMsg">⬆ A new update is available.</span>
+    <button id="updateBtn" onclick="triggerUpdate()" style="background:#0d0f0e;color:#ffd166;border:none;padding:7px 16px;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;cursor:pointer;">Install & Restart</button>
+  </div>
+
   <header>
     <div class="logo-block">
       <h1>BatchTrack</h1>
@@ -930,6 +936,33 @@
 
 <script>
   const STORAGE_KEY = 'oi_batch_script_url';
+
+  // Listen for update events from Electron main process
+  if (window.electronUpdater) {
+    window.electronUpdater.onUpdateAvailable((version) => {
+      const bar = document.getElementById('updateBar');
+      document.getElementById('updateMsg').textContent = `⬆ BatchTrack v${version} is downloading...`;
+      bar.style.display = 'flex';
+      document.getElementById('updateBtn').style.display = 'none';
+    });
+    window.electronUpdater.onUpdateDownloaded((version) => {
+      const bar = document.getElementById('updateBar');
+      document.getElementById('updateMsg').textContent = `✅ BatchTrack v${version} ready to install.`;
+      bar.style.display = 'flex';
+      document.getElementById('updateBtn').style.display = 'block';
+    });
+    window.electronUpdater.onUpdateError((msg) => {
+      const bar = document.getElementById('updateBar');
+      bar.style.background = '#ff6b6b';
+      document.getElementById('updateMsg').textContent = `⚠ Update error: ${msg}`;
+      bar.style.display = 'flex';
+      document.getElementById('updateBtn').style.display = 'none';
+    });
+  }
+
+  function triggerUpdate() {
+    if (window.electronUpdater) window.electronUpdater.installUpdate();
+  }
   let currentBatch = '';
   let allRecords = [];
   const PAGE_SIZE = 5;
