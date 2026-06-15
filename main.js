@@ -21,6 +21,21 @@ function createWindow() {
   mainWindow.loadFile('index.html');
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    // Allow blank windows for print
+    if (!url || url === 'about:blank' || url === '') {
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          width: 1000,
+          height: 750,
+          autoHideMenuBar: false,
+          webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+          }
+        }
+      };
+    }
     shell.openExternal(url);
     return { action: 'deny' };
   });
