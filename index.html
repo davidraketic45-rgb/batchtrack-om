@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1678,25 +1677,22 @@ function doGet(e) {
     `;
 
     const fullHTML = `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Labels — ${previewRecord['Batch No'] || ''}</title>
+<html><head><meta charset="UTF-8"><title>Labels</title>
 <style>${printCSS}</style></head><body>
-<div class="label-grid" style="display:grid;grid-template-columns:1fr 1fr;column-gap:5mm;row-gap:5mm;">${labels}</div>
-<script>window.onload=function(){window.print();};<\/script>
+<div class="label-grid">${labels}</div>
 </body></html>`;
 
-    // Use Blob URL — works from file:// and avoids iframe security restriction
-    const blob = new Blob([fullHTML], { type: 'text/html' });
-    const url  = URL.createObjectURL(blob);
-    const win  = window.open(url, '_blank');
-    if (win) {
-      win.onafterprint = () => { win.close(); URL.revokeObjectURL(url); };
-    } else {
-      // Fallback: create a temporary link and click it
-      const a = document.createElement('a');
-      a.href = url;
-      a.target = '_blank';
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    // Write to a hidden div and use Electron's webContents.print via a dedicated print window
+    // Use data URI which works in Electron without security restrictions
+    const dataUri = 'data:text/html;charset=utf-8,' + encodeURIComponent(fullHTML);
+    const printWin = window.open(dataUri, '_blank', 'width=900,height=700');
+    if (printWin) {
+      printWin.onload = () => {
+        setTimeout(() => {
+          printWin.print();
+          printWin.onafterprint = () => printWin.close();
+        }, 800);
+      };
     }
   }
 
