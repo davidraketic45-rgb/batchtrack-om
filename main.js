@@ -13,6 +13,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      nativeWindowOpen: true,
     },
     autoHideMenuBar: true,
     icon: path.join(__dirname, 'icon.png'),
@@ -21,21 +22,22 @@ function createWindow() {
   mainWindow.loadFile('index.html');
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    // Allow blank windows for print
-    if (!url || url === 'about:blank' || url === '') {
+    // Allow blank windows (for print)
+    if (!url || url === 'about:blank') {
       return {
         action: 'allow',
         overrideBrowserWindowOptions: {
-          width: 1000,
-          height: 750,
+          width: 1100,
+          height: 800,
           autoHideMenuBar: false,
           webPreferences: {
             nodeIntegration: false,
-            contextIsolation: true,
+            contextIsolation: false,
           }
         }
       };
     }
+    // Open all other URLs in system browser
     shell.openExternal(url);
     return { action: 'deny' };
   });
