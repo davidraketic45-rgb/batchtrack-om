@@ -943,7 +943,7 @@
 <script>
   const STORAGE_KEY = 'oi_batch_script_url';
 
-  const APP_VERSION = '1.1.8';
+  const APP_VERSION = '1.1.9';
   const GITHUB_REPO = 'Davidraketic45-rgb/batchtrack-om';
 
   async function checkForUpdates() {
@@ -1697,79 +1697,76 @@ function doGet(e) {
     // Use data URI which works in Electron without security restrictions
     // Write into a hidden iframe in the same page — works in Electron
     let pf = document.getElementById('printFrame');
-    if (pf) pf.remove();
-    pf = document.createElement('iframe');
-    pf.id = 'printFrame';
-    pf.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;border:none;z-index:9999;background:#fff;';
-    document.body.appendChild(pf);
-    const pdoc = pf.contentDocument || pf.contentWindow.document;
-    // Open in a new window — works in both browser and Electron
-    // Remove any existing print overlay
-    closePrintOverlay();
+    // Hide all body children and show print overlay
+    const bodyChildren = Array.from(document.body.children);
+    bodyChildren.forEach(el => {
+      el._prevDisplay = el.style.display;
+      if (el.id !== 'printOverlay') el.style.display = 'none';
+    });
 
-    // Build overlay with toolbar + label content
+    // Build overlay
     const overlay = document.createElement('div');
     overlay.id = 'printOverlay';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;overflow-y:auto;';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;flex-direction:column;align-items:center;overflow-y:auto;';
 
     // Toolbar
     const toolbar = document.createElement('div');
-    toolbar.style.cssText = 'position:sticky;top:0;width:100%;max-width:860px;display:flex;justify-content:space-between;align-items:center;padding:14px 20px;background:rgba(22,26,24,0.97);border-bottom:1px solid #2a3230;z-index:1;';
+    toolbar.style.cssText = 'position:sticky;top:0;width:100%;display:flex;justify-content:space-between;align-items:center;padding:14px 24px;background:rgba(22,26,24,0.97);border-bottom:1px solid #2a3230;gap:12px;flex-shrink:0;';
     toolbar.innerHTML = `
       <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:#e8ede9;">
         Print Preview
         <span style="font-size:12px;color:#6b7a70;font-family:'DM Mono',monospace;margin-left:10px;">${totalLabels} label${totalLabels>1?'s':''} · ${Math.ceil(totalLabels/labelsPerSheet)} page${Math.ceil(totalLabels/labelsPerSheet)>1?'s':''}</span>
       </div>
       <div style="display:flex;gap:10px;">
-        <button onclick="window.print()" style="background:#b8f5a0;color:#0d0f0e;border:none;padding:9px 20px;border-radius:8px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;">🖨 Print</button>
-        <button onclick="closePrintOverlay()" style="background:none;border:1px solid #2a3230;color:#6b7a70;padding:9px 14px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;">✕ Close</button>
+        <button id="doPrintBtn" style="background:#b8f5a0;color:#0d0f0e;border:none;padding:9px 20px;border-radius:8px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;">🖨 Print</button>
+        <button id="closePrintBtn" style="background:none;border:1px solid #2a3230;color:#6b7a70;padding:9px 14px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;">✕ Close</button>
       </div>
     `;
 
-    // Label sheet
-    const sheet = document.createElement('div');
-    sheet.style.cssText = 'background:#fff;margin:20px;padding:8mm;border-radius:4px;width:210mm;';
-    sheet.innerHTML = `<div class="label-grid" style="display:grid;grid-template-columns:1fr 1fr;column-gap:5mm;row-gap:5mm;">${labels}</div>`;
-
-    // Inject label CSS into overlay
+    // Print CSS
     const styleEl = document.createElement('style');
     styleEl.id = 'printStyle';
     styleEl.textContent = `
       @page { size: A4 portrait; margin: 0.2mm 0.2mm 0.7mm 0.2mm; }
       @media print {
-        body > *:not(#printOverlay) { visibility:hidden !important; }
-        #printOverlay { visibility:visible !important; position:fixed !important; inset:0 !important; background:#fff !important; overflow:visible !important; }
-        #printOverlay * { visibility:visible !important; }
-        #printOverlay > div:first-child { display:none !important; }
-        #poSheet { padding:0 !important; margin:0 !important; width:100% !important; border-radius:0 !important; }
+        body > *:not(#printOverlay) { display:none !important; }
+        #printOverlay { position:static !important; background:#fff !important; overflow:visible !important; padding:0 !important; display:block !important; }
+        #printToolbar { display:none !important; }
+        #poSheet { margin:0 !important; padding:0 !important; width:100% !important; border-radius:0 !important; }
         * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
       }
       ${printCSS}
     `;
     document.head.appendChild(styleEl);
 
-    overlay.appendChild(toolbar);
+    // Label sheet
+    const sheet = document.createElement('div');
     sheet.id = 'poSheet';
+    sheet.style.cssText = 'background:#fff;margin:20px auto;padding:8mm;border-radius:6px;width:210mm;flex-shrink:0;';
+    sheet.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;column-gap:5mm;row-gap:5mm;">${labels}</div>`;
+
+    toolbar.id = 'printToolbar';
+    overlay.appendChild(toolbar);
     overlay.appendChild(sheet);
     document.body.appendChild(overlay);
 
-    // Close on click outside sheet
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) closePrintOverlay();
-    });
-
-    window.onafterprint = () => closePrintOverlay();
+    // Events
+    document.getElementById('doPrintBtn').onclick = () => window.print();
+    document.getElementById('closePrintBtn').onclick = () => closePrintOverlay(bodyChildren);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closePrintOverlay(bodyChildren); });
+    window.onafterprint = () => closePrintOverlay(bodyChildren);
   }
 
-  function closePrintOverlay() {
+  function closePrintOverlay(bodyChildren) {
     document.getElementById('printOverlay')?.remove();
     document.getElementById('printStyle')?.remove();
     window.onafterprint = null;
-    // Ensure app is visible again
-    document.querySelector('.app').style.display = '';
-    document.body.style.background = '';
+    // Restore all body children
+    (bodyChildren || Array.from(document.body.children)).forEach(el => {
+      el.style.display = el._prevDisplay !== undefined ? el._prevDisplay : '';
+      delete el._prevDisplay;
+    });
   }
-
 
   function calcNetWeight() {
     const qty  = parseFloat(document.getElementById('quantity').value);
