@@ -943,7 +943,7 @@
 <script>
   const STORAGE_KEY = 'oi_batch_script_url';
 
-  const APP_VERSION = '1.1.5';
+  const APP_VERSION = '1.1.6';
   const GITHUB_REPO = 'Davidraketic45-rgb/batchtrack-om';
 
   async function checkForUpdates() {
@@ -1704,16 +1704,24 @@ function doGet(e) {
     document.body.appendChild(pf);
     const pdoc = pf.contentDocument || pf.contentWindow.document;
     // Open in a new window — works in both browser and Electron
-    const printWin = window.open('', '_blank', 'width=1100,height=800,menubar=yes,toolbar=yes');
+    // Use Blob URL to avoid same-origin document.write blanking parent page
+    const blob    = new Blob([fullHTML], { type: 'text/html;charset=utf-8' });
+    const blobUrl = URL.createObjectURL(blob);
+    const printWin = window.open(blobUrl, '_blank', 'width=1100,height=800,menubar=yes,toolbar=yes');
     if (printWin) {
-      printWin.document.open();
-      printWin.document.write(fullHTML);
-      printWin.document.close();
       printWin.onload = () => {
-        setTimeout(() => { printWin.focus(); printWin.print(); }, 600);
+        setTimeout(() => {
+          printWin.focus();
+          printWin.print();
+          printWin.onafterprint = () => {
+            printWin.close();
+            URL.revokeObjectURL(blobUrl);
+          };
+        }, 600);
       };
     } else {
-      // Fallback: write into hidden iframe if popup blocked
+      // Fallback iframe if popup blocked
+      URL.revokeObjectURL(blobUrl);
       let pf = document.getElementById('printFrame');
       if (pf) pf.remove();
       pf = document.createElement('iframe');
