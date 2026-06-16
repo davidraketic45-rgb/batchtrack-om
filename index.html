@@ -943,7 +943,7 @@
 <script>
   const STORAGE_KEY = 'oi_batch_script_url';
 
-  const APP_VERSION = '1.1.7';
+  const APP_VERSION = '1.1.8';
   const GITHUB_REPO = 'Davidraketic45-rgb/batchtrack-om';
 
   async function checkForUpdates() {
@@ -1704,39 +1704,70 @@ function doGet(e) {
     document.body.appendChild(pf);
     const pdoc = pf.contentDocument || pf.contentWindow.document;
     // Open in a new window — works in both browser and Electron
-    // Save current page content, replace with print content, print, then restore
-    const appDiv = document.querySelector('.app');
-    const savedHTML = appDiv.innerHTML;
-    const savedStyle = appDiv.getAttribute('style') || '';
+    // Remove any existing print overlay
+    closePrintOverlay();
 
-    // Hide app, show print content
-    document.body.insertAdjacentHTML('beforeend',
-      `<div id="printContent" style="position:fixed;inset:0;background:#fff;z-index:9999;padding:0;margin:0;">${fullHTML.replace(/<!DOCTYPE.*?<body[^>]*>/s,'').replace(/<\/body>.*$/s,'')}</div>`
-    );
+    // Build overlay with toolbar + label content
+    const overlay = document.createElement('div');
+    overlay.id = 'printOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;overflow-y:auto;';
 
-    // Use @media print to only show printContent
+    // Toolbar
+    const toolbar = document.createElement('div');
+    toolbar.style.cssText = 'position:sticky;top:0;width:100%;max-width:860px;display:flex;justify-content:space-between;align-items:center;padding:14px 20px;background:rgba(22,26,24,0.97);border-bottom:1px solid #2a3230;z-index:1;';
+    toolbar.innerHTML = `
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:#e8ede9;">
+        Print Preview
+        <span style="font-size:12px;color:#6b7a70;font-family:'DM Mono',monospace;margin-left:10px;">${totalLabels} label${totalLabels>1?'s':''} · ${Math.ceil(totalLabels/labelsPerSheet)} page${Math.ceil(totalLabels/labelsPerSheet)>1?'s':''}</span>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="window.print()" style="background:#b8f5a0;color:#0d0f0e;border:none;padding:9px 20px;border-radius:8px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;">🖨 Print</button>
+        <button onclick="closePrintOverlay()" style="background:none;border:1px solid #2a3230;color:#6b7a70;padding:9px 14px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;">✕ Close</button>
+      </div>
+    `;
+
+    // Label sheet
+    const sheet = document.createElement('div');
+    sheet.style.cssText = 'background:#fff;margin:20px;padding:8mm;border-radius:4px;width:210mm;';
+    sheet.innerHTML = `<div class="label-grid" style="display:grid;grid-template-columns:1fr 1fr;column-gap:5mm;row-gap:5mm;">${labels}</div>`;
+
+    // Inject label CSS into overlay
     const styleEl = document.createElement('style');
     styleEl.id = 'printStyle';
     styleEl.textContent = `
       @page { size: A4 portrait; margin: 0.2mm 0.2mm 0.7mm 0.2mm; }
       @media print {
-        .app { display:none !important; }
-        #printContent { display:block !important; position:static !important; }
-        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        body > *:not(#printOverlay) { visibility:hidden !important; }
+        #printOverlay { visibility:visible !important; position:fixed !important; inset:0 !important; background:#fff !important; overflow:visible !important; }
+        #printOverlay * { visibility:visible !important; }
+        #printOverlay > div:first-child { display:none !important; }
+        #poSheet { padding:0 !important; margin:0 !important; width:100% !important; border-radius:0 !important; }
+        * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
       }
-      @media screen { #printContent { display:block; } }
+      ${printCSS}
     `;
     document.head.appendChild(styleEl);
 
-    setTimeout(() => {
-      window.print();
-      // Restore after print dialog closes
-      window.onafterprint = () => {
-        document.getElementById('printContent')?.remove();
-        document.getElementById('printStyle')?.remove();
-        window.onafterprint = null;
-      };
-    }, 400);
+    overlay.appendChild(toolbar);
+    sheet.id = 'poSheet';
+    overlay.appendChild(sheet);
+    document.body.appendChild(overlay);
+
+    // Close on click outside sheet
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closePrintOverlay();
+    });
+
+    window.onafterprint = () => closePrintOverlay();
+  }
+
+  function closePrintOverlay() {
+    document.getElementById('printOverlay')?.remove();
+    document.getElementById('printStyle')?.remove();
+    window.onafterprint = null;
+    // Ensure app is visible again
+    document.querySelector('.app').style.display = '';
+    document.body.style.background = '';
   }
 
 
