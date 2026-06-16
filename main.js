@@ -13,7 +13,6 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      nativeWindowOpen: true,
     },
     autoHideMenuBar: true,
     icon: path.join(__dirname, 'icon.png'),
@@ -22,8 +21,8 @@ function createWindow() {
   mainWindow.loadFile('index.html');
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    // Allow blank windows (for print)
-    if (!url || url === 'about:blank') {
+    // Allow blob URLs for print windows
+    if (url.startsWith('blob:') || !url || url === 'about:blank') {
       return {
         action: 'allow',
         overrideBrowserWindowOptions: {
@@ -32,12 +31,11 @@ function createWindow() {
           autoHideMenuBar: false,
           webPreferences: {
             nodeIntegration: false,
-            contextIsolation: false,
+            contextIsolation: true,
           }
         }
       };
     }
-    // Open all other URLs in system browser
     shell.openExternal(url);
     return { action: 'deny' };
   });
